@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>Employee Form</title>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet"
+              href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+        <script
+        src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+        <script
+        src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+
+    </head>
+    <body>
+        <div class="container">
+            <h2>Employee form</h2>
+            <form id="empform" method="get">
+                <div class="form-group">
+                    <label for="empid">Employee ID:</label>
+                    <input type="text" class="form-control" name="empid" id="empid" onchange="getEmp()">
+                </div>
+                <div class="form-group">
+                    <label for="empname">Employee Name:</label>
+                    <input type="text" class="form-control" id="empname" name="empname">
+                </div>
+                <div class="form-group">
+                    <label for="empsal">Basic Salary:</label>
+                    <input type="number" class="form-control" id="empsal" name="empsal">
+                </div>
+                <div class="form-group">
+                    <label for="hra">HRA:</label>
+                    <input type="text" class="form-control" id="hra" name="hra">
+                </div>
+                <div class="form-group">
+                    <label for="da">DA:</label>
+                    <input type="text" class="form-control" id="da" name="da">
+                </div>
+                <div class="form-group">
+                    <label for="deduct">Deduction:</label>
+                    <input type="number" class="form-control" id="deduct" name="deduct">
+                </div>
+
+                <button type="button" class="btn btn-primary" id="save" onclick="saveData()" disabled>Save</button>
+                <button type="button" class="btn btn-primary" id="change" onclick="changeData()" disabled>Change</button>
+                <button type="button" class="btn btn-primary" id="reset" onclick="resetForm()" disabled>Reset</button>
+            </form>
+        </div>
+        <script>
+            $("#empid").focus();
+
+            function saveRecNo2LS(jsonObj) {
+                var lvData = JSON.parse(jsonObj.data);
+                localStorage.setItem("recno", lvData.rec_no);
+            }
+
+            function getEmpIdAsJsonObj() {
+                var empid = $("#empid").val();
+                var jsonStr = {
+                    id: empid
+                };
+                return JSON.stringify(jsonStr);
+            }
+
+            function fillData(jsonObj) {
+                saveRecNo2LS(jsonObj);
+                var record = JSON.parse(jsonObj.data).record;
+                $("#empname").val(record.name);
+                $("#empsal").val(record.salary);
+                $("#hra").val(record.hra);
+                $("#da").val(record.da);
+                $("#deduct").val(record.deduction);
+            }
+
+
+            function resetForm() {
+                $("#empid").val("");
+                $("#empname").val("");
+                $("#empsal").val("");
+                $("#hra").val("");
+                $("#da").val("");
+                $("#deduct").val("");
+                $("#empid").prop("disabled", false);
+                $("#save").prop("disabled", true);
+                $("#change").prop("disabled", true);
+                $("#reset").prop("disabled", true);
+                $("#empid").focus();
+            }
+
+            function validateData() {
+
+                var empid = $("#empid").val();
+                var empname = $("#empname").val();
+                var empsal = $("#empsal").val();
+                var hra = $("#hra").val();
+                var da = $("#da").val();
+                var deduct = $("#deduct").val();
+
+                if (empid === "") {
+                    alert("Employee ID Required Value");
+                    $("#empid").focus();
+                    return "";
+                }
+
+                if (empname === "") {
+                    alert("Employee Name is Required Value");
+                    $("#empname").focus();
+                    return "";
+                }
+
+                if (empsal === "") {
+                    alert("Salary Required Value");
+                    $("#empsal").focus();
+                    return "";
+                }
+
+                if (hra === "") {
+                    alert("HRA Required Value");
+                    $("#hra").focus();
+                    return "";
+                }
+
+                if (da === "") {
+                    alert("DA Required Value");
+                    $("#da").focus();
+                    return "";
+                }
+
+                if (deduct === "") {
+                    alert("Deduction Required Value");
+                    $("#deduct").focus();
+                    return "";
+                }
+                var jsonStrObj = {
+                    id: empid,
+                    name: empname,
+                    salary: empsal,
+                    hra: hra,
+                    da: da,
+                    deduction: deduct
+                };
+                return JSON.stringify(jsonStrObj);
+            }
+
+            function getEmp() {
+                var empIdJsonObj = getEmpIdAsJsonObj();
+                var getRequest = createGET_BY_KEYRequest("90933246|-31949278364580315|90950849", "EMP-DB", "EmpData1", empIdJsonObj);
+
+                jQuery.ajaxSetup({async: false});
+                var resJsonObj = executeCommandAtGivenBaseUrl(getRequest, "http://api.login2explore.com:5577", "/api/irl");
+                jQuery.ajaxSetup({async: true});
+
+                if (resJsonObj.status === 400) {
+                    $("#save").prop("disabled", false);
+                    $("#reset").prop("disabled", false);
+                    $("#empname").focus();
+                } else if (resJsonObj.status === 200) {
+                    $("#empid").prop("disabled", true);
+                    fillData(resJsonObj);
+
+                    $("#change").prop("disabled", false);
+                    $("#reset").prop("disabled", false);
+                    $("#empname").focus();
+                }
+            }
+
+            function saveData() {
+                var jsonStrObj = validateData();
+
+                if (jsonStrObj === "") {
+                    return "";
+                }
+
+                var putRequest = createPUTRequest("90933246|-31949278364580315|90950849", jsonStrObj, "EMP-DB", "EmpData1");
+                alert(putRequest);
+
+                jQuery.ajaxSetup({async: false});
+                var resJsonObj = executeCommandAtGivenBaseUrl(putRequest, "http://api.login2explore.com:5577", "/api/iml");
+                alert(JSON.stringify(resJsonObj));
+                jQuery.ajaxSetup({async: true});
+
+                resetForm();
+                $("#empid").focus();
+            }
+
+            function changeData() {
+                $("#change").prop("disabled", true);
+                jsonChg = validateData();
+                var updateRequest = createUPDATERecordRequest("90933246|-31949278364580315|90950849", jsonChg, "EMP-DB", "EmpData1", localStorage.getItem("recno"));
+                jQuery.ajaxSetup({async: false});
+                var resJsonObj = executeCommandAtGivenBaseUrl(updateRequest, "http://api.login2explore.com:5577", "/api/iml");
+                jQuery.ajaxSetup({async: true});
+                console.log(resJsonObj);
+                resetForm();
+                $("#empid").focus();
+            }
+
+        </script>
+        <script src="https://login2explore.com/jpdb/resources/js/0.0.3/jpdb-commons.js"></script>
+    </body>
+</html>
+
